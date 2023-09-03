@@ -1,0 +1,2 @@
+[dependencies]
+cgroups_rs = "0.X.X"  # Replace "0.X.X" with the version number you wish to use.
