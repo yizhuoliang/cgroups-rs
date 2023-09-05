@@ -137,17 +137,54 @@ impl CgroupBuilder {
     }
 
     /// Finalize the control group, consuming the builder and creating the control group.
+    // pub fn build(self, hier: Box<dyn Hierarchy>) -> Result<Cgroup, Error> {
+    //     if let Some(controllers) = self.specified_controllers {
+    //         let cg = Cgroup::new_with_specified_controllers(hier, self.name, Some(controllers))?;
+    //         cg.apply(&self.resources)?;
+    //         Ok(cg)
+    //     } else {
+    //         let cg = Cgroup::new(hier, self.name)?;
+    //         cg.apply(&self.resources)?;
+    //         Ok(cg)
+    //     }
+    // }
+    
     pub fn build(self, hier: Box<dyn Hierarchy>) -> Result<Cgroup, Error> {
-        if let Some(controllers) = self.specified_controllers {
-            let cg = Cgroup::new_with_specified_controllers(hier, self.name, Some(controllers))?;
-            cg.apply(&self.resources)?;
-            Ok(cg)
+        let controllers_option = self.specified_controllers;
+        let name = self.name;
+        let resources = self.resources;
+    
+        if let Some(controllers) = controllers_option {
+            match Cgroup::new_with_specified_controllers(hier, name, Some(controllers)) {
+                Ok(cg) => match cg.apply(&resources) {
+                    Ok(_) => Ok(cg),
+                    Err(e) => {
+                        println!("Error occurred during apply: {:?}", e);
+                        Err(e)
+                    },
+                },
+                Err(e) => {
+                    println!("Error occurred while creating Cgroup with specified controllers: {:?}", e);
+                    Err(e)
+                },
+            }
         } else {
-            let cg = Cgroup::new(hier, self.name)?;
-            cg.apply(&self.resources)?;
-            Ok(cg)
+            match Cgroup::new(hier, name) {
+                Ok(cg) => match cg.apply(&resources) {
+                    Ok(_) => Ok(cg),
+                    Err(e) => {
+                        println!("Error occurred during apply: {:?}", e);
+                        Err(e)
+                    },
+                },
+                Err(e) => {
+                    println!("Error occurred while creating new Cgroup: {:?}", e);
+                    Err(e)
+                },
+            }
         }
     }
+    
 
     /// Specifically enable some controllers in the control group.
     pub fn set_specified_controllers(mut self, specified_controllers: Vec<String>) -> Self {
