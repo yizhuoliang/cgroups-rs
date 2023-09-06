@@ -3,17 +3,20 @@ use std::io::Write;
 use std::thread;
 
 fn main() {
-    // Enable the CPU controller in the root cgroup
-    fs::write("/sys/fs/cgroup/cgroup.subtree_control", "+cpu")
-        .expect("Failed to enable CPU controller");
+    // Create a new cgroup in the cgroups v2 hierarchy
+    fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
 
-    // Create a new cgroup
-    fs::create_dir("/sys/fs/cgroup/my_cgroup")
-        .expect("Failed to create cgroup");
+    // Enable the CPU controller for the cgroup
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "cpu")
+        .expect("Failed to enable CPU controller");
 
     // Set a CPU max limit for the cgroup (for example, 10000 us every 50000 us)
     fs::write("/sys/fs/cgroup/my_cgroup/cpu.max", "10000 50000")
         .expect("Failed to set CPU max limit");
+
+    // Enable threaded mode to allow adding individual threads to the cgroup
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.type", "threaded")
+        .expect("Failed to set cgroup type to threaded");
 
     // Spawn some threads and add them to the cgroup
     let handles: Vec<_> = (0..4).map(|_| {
