@@ -3,8 +3,13 @@ use std::io::Write;
 use std::thread;
 
 fn main() {
-    // Create a new cgroup in the cgroups v2 hierarchy
-    fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
+    // Enable the CPU controller in the root cgroup
+    fs::write("/sys/fs/cgroup/cgroup.subtree_control", "+cpu")
+        .expect("Failed to enable CPU controller");
+
+    // Create a new cgroup
+    fs::create_dir("/sys/fs/cgroup/my_cgroup")
+        .expect("Failed to create cgroup");
 
     // Set a CPU max limit for the cgroup (for example, 10000 us every 50000 us)
     fs::write("/sys/fs/cgroup/my_cgroup/cpu.max", "10000 50000")
