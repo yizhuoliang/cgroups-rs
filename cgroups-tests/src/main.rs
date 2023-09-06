@@ -3,10 +3,14 @@ use std::io::Write;
 use std::thread;
 
 fn main() {
+    // Delegate the CPU controller to the new cgroup (at the root level)
+    fs::write("/sys/fs/cgroup/cgroup.subtree_control", "cpu")
+        .expect("Failed to delegate CPU controller");
+
     // Create a new cgroup in the cgroups v2 hierarchy
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
 
-    // Enable the CPU controller for the cgroup
+    // Enable the CPU controller for the new cgroup
     fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "cpu")
         .expect("Failed to enable CPU controller");
 
