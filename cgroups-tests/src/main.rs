@@ -2,6 +2,8 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::thread;
+use std::time::Instant;
+use gettid;
 
 fn main() {
     // Open cgroup.subtree_control file in append mode to delegate the CPU and cpuset controllers to the new cgroup (at the root level)
@@ -31,8 +33,8 @@ fn main() {
         .expect("Failed to set cgroup type to threaded");
 
     // Spawn some threads and add them to the cgroup
-    let handles: Vec<_> = (0..4).map(|_| {
-        thread::spawn(|| {
+    let handles: Vec<_> = (0..4).map(|i| {
+        thread::spawn(move || {
             // Get the thread id as a cgroup v2-compatible string
             let tid = format!("{}", gettid::gettid());
 
@@ -44,14 +46,36 @@ fn main() {
                 .expect("Failed to add thread to cgroup");
 
             // Now this thread is in the cgroup and its CPU usage is limited
-            loop {
-                // Simulate some CPU work
-            }
+            let start = Instant::now();
+
+            // Perform some CPU intensive work
+            do_work();
+
+            println!("Thread {} in cgroup finished work in {:?}", i, start.elapsed());
         })
     }).collect();
 
-    // Wait for all threads to finish (they won't, so this will block forever)
+    // Spawn a thread outside the cgroup to compare
+    let outside_handle = thread::spawn(|| {
+        let start = Instant::now();
+
+        // Perform the same CPU intensive work
+        do_work();
+
+        println!("Thread outside cgroup finished work in {:?}", start.elapsed());
+    });
+
+    // Wait for all threads to finish
     for handle in handles {
         handle.join().expect("Failed to join thread");
+    }
+
+    outside_handle.join().expect("Failed to join thread outside cgroup");
+}
+
+fn do_work() {
+    let mut x = 0;
+    for _ in 0..1_000_000_000 {
+        x += 1;
     }
 }
