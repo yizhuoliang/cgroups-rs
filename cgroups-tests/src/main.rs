@@ -1,11 +1,18 @@
-use std::fs;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::thread;
 
 fn main() {
-    // Delegate the CPU controller to the new cgroup (at the root level)
-    fs::write("/sys/fs/cgroup/cgroup.subtree_control", "cpu")
-        .expect("Failed to delegate CPU controller");
+    // Open cgroup.subtree_control file in append mode to delegate the CPU and cpuset controllers to the new cgroup (at the root level)
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("/sys/fs/cgroup/cgroup.subtree_control")
+        .expect("Failed to open cgroup.subtree_control");
+
+    // Delegate the CPU and cpuset controllers at root level
+    file.write_all(b"+cpu\n").expect("Failed to delegate CPU controller");
+    file.write_all(b"+cpuset\n").expect("Failed to delegate cpuset controller");
 
     // Create a new cgroup in the cgroups v2 hierarchy
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
@@ -47,4 +54,3 @@ fn main() {
         handle.join().expect("Failed to join thread");
     }
 }
-
