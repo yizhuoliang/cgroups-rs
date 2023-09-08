@@ -19,7 +19,7 @@ fn main() {
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
 
     // Enable the CPU controller for the new cgroup
-    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "cpu")
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "+cpu\n")
         .expect("Failed to enable CPU controller");
 
     // Set a CPU max limit for the cgroup (for example, 10000 us every 50000 us)
