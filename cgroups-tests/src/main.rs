@@ -6,6 +6,35 @@ use std::time::Instant;
 use gettid;
 
 fn main() {
+    setup_cgroup();
+
+    // set the weight of the main process to 80%
+    fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "800")
+        .expect("Failed to set CPU weight for main process");
+
+    let weights = [100, 300, 400];
+    let handles: Vec<_> = weights.iter().enumerate().map(|(i, &weight)| {
+        thread::spawn(move || {
+            set_thread_weight(i, weight);
+            let start = Instant::now();
+            do_work();
+            println!("Thread {} finished work in {:?}", i, start.elapsed());
+        })
+    }).collect();
+
+    for handle in handles {
+        handle.join().expect("Failed to join thread");
+    }
+}
+
+fn do_work() {
+    let mut x = 0;
+    for _ in 0..1_000_000_000 {
+        x += 1;
+    }
+}
+
+fn test1() {
     // Open cgroup.subtree_control file in append mode to delegate the CPU and cpuset controllers to the new cgroup (at the root level)
     let mut file = OpenOptions::new()
         .write(true)
@@ -20,52 +49,48 @@ fn main() {
     // Create a new cgroup in the cgroups v2 hierarchy
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
 
-    // // Enable the CPU controller for the new cgroup
-    // fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "+cpu\n")
-    //     .expect("Failed to enable CPU controller");
-
-    // Set a CPU max limit for the cgroup (for example, 10000 us every 50000 us)
+    // set a CPU max limit for the cgroup (for example, 10000 us every 50000 us)
     fs::write("/sys/fs/cgroup/my_cgroup/cpu.max", "10000 50000")
         .expect("Failed to set CPU max limit");
 
-    // Enable threaded mode to allow adding individual threads to the cgroup
+    // enable threaded mode to allow adding individual threads to the cgroup
     fs::write("/sys/fs/cgroup/my_cgroup/cgroup.type", "threaded")
         .expect("Failed to set cgroup type to threaded");
 
-    // Spawn some threads and add them to the cgroup
+    // spawn threads and add them to the cgroup
     let handles: Vec<_> = (0..4).map(|i| {
         thread::spawn(move || {
-            // Get the thread id as a cgroup v2-compatible string
+            // get the thread id as a cgroup v2-compatible string
             let tid = format!("{}", gettid::gettid());
 
-            // Add this thread to the cgroup
+            // add this thread to the cgroup
             fs::OpenOptions::new()
                 .write(true)
                 .open("/sys/fs/cgroup/my_cgroup/cgroup.threads")
                 .and_then(|mut file| file.write_all(tid.as_bytes()))
                 .expect("Failed to add thread to cgroup");
 
-            // Now this thread is in the cgroup and its CPU usage is limited
+            // now this thread is in the cgroup
             let start = Instant::now();
 
-            // Perform some CPU intensive work
+            // perform some CPU intensive work
             do_work();
 
             println!("Thread {} in cgroup finished work in {:?}", i, start.elapsed());
         })
     }).collect();
 
-    // Spawn a thread outside the cgroup to compare
+    // spawn a thread outside the cgroup to compare
     let outside_handle = thread::spawn(|| {
         let start = Instant::now();
 
-        // Perform the same CPU intensive work
+        // perform the same cpu intensive work
         do_work();
 
         println!("Thread outside cgroup finished work in {:?}", start.elapsed());
     });
 
-    // Wait for all threads to finish
+    // wait for all threads to finish
     for handle in handles {
         handle.join().expect("Failed to join thread");
     }
@@ -73,9 +98,27 @@ fn main() {
     outside_handle.join().expect("Failed to join thread outside cgroup");
 }
 
-fn do_work() {
-    let mut x = 0;
-    for _ in 0..1_000_000_000 {
-        x += 1;
-    }
+fn setup_cgroup() {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("/sys/fs/cgroup/cgroup.subtree_control")
+        .expect("Failed to open cgroup.subtree_control");
+
+    fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "+cpu\n")
+        .expect("Failed to enable CPU controller for the new cgroup");
+}
+
+fn set_thread_weight(thread_id: usize, weight: u32) {
+    let tid = format!("{}", gettid::gettid());
+
+    fs::OpenOptions::new()
+        .write(true)
+        .open(format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id))
+        .and_then(|mut file| file.write_all(tid.as_bytes()))
+        .expect("Failed to add thread to cgroup");
+
+    fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
+        .expect("Failed to set CPU weight for thread");
 }
