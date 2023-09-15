@@ -6,6 +6,8 @@ use std::time::Instant;
 use gettid;
 
 fn main() {
+
+    cleanup_cgroup();
     setup_cgroup();
 
     // set the weight of the main process to 80%
@@ -121,4 +123,8 @@ fn set_thread_weight(thread_id: usize, weight: u32) {
 
     fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
         .expect("Failed to set CPU weight for thread");
+}
+
+fn cleanup_cgroup() {
+    let _ = fs::remove_dir("/sys/fs/cgroup/my_cgroup");
 }
