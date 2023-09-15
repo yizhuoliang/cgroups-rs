@@ -107,9 +107,10 @@ fn setup_cgroup() {
         .open("/sys/fs/cgroup/cgroup.subtree_control")
         .expect("Failed to open cgroup.subtree_control");
 
+    file.write_all(b"+cpu\n").expect("Failed to delegate CPU controller");
+    file.write_all(b"+cpuset\n").expect("Failed to delegate cpuset controller");
+
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
-    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "+cpu\n")
-        .expect("Failed to enable CPU controller for the new cgroup");
 }
 
 fn set_thread_weight(thread_id: usize, weight: u32) {
