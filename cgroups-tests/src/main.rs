@@ -43,7 +43,7 @@ fn main() {
             fs::OpenOptions::new()
                 .write(true)
                 .open(format!("{}/cgroup.threads", cgroup_dir))
-                .and_then(|mut file| file.write_all(tid.as_bytes()))
+                .and_then(|mut file| file.write_all(thread_id.as_bytes()))
                 .expect("Failed to add thread to cgroup");
 
             fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
