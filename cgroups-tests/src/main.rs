@@ -11,13 +11,44 @@ fn main() {
     setup_cgroup();
 
     // set the weight of the main process to 80%
-    fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "800")
+    fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "8000")
         .expect("Failed to set CPU weight for main process");
 
-    let weights = [100, 300, 400];
-    let handles: Vec<_> = weights.iter().enumerate().map(|(i, &weight)| {
+    let thread_weights = [(10, "A"), (30, "B"), (40, "C")];
+
+    for (weight, thread_id) in &thread_weights {
+        // Create subdirectories for each thread and set up their respective cgroup configurations
+        let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
+        fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
+        fs::write(format!("{}/cgroup.type", cgroup_dir), "threaded").expect("Failed to set cgroup type");
+        fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
+            .expect("Failed to set CPU weight");
+    }
+    
+    // let weights = [100, 300, 400];
+    // let handles: Vec<_> = weights.iter().enumerate().map(|(i, &weight)| {
+    //     thread::spawn(move || {
+    //         set_thread_weight(i, weight);
+    //         let start = Instant::now();
+    //         do_work();
+    //         println!("Thread {} finished work in {:?}", i, start.elapsed());
+    //     })
+    // }).collect();
+
+    let handles: Vec<_> = thread_weights.iter().map(|(weight, thread_id)| {
         thread::spawn(move || {
-            set_thread_weight(i, weight);
+            
+            // Add this thread to the cgroup
+            let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
+            fs::OpenOptions::new()
+                .write(true)
+                .open(format!("{}/cgroup.threads", cgroup_dir))
+                .and_then(|mut file| file.write_all(tid.as_bytes()))
+                .expect("Failed to add thread to cgroup");
+
+            fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
+            .expect("Failed to set CPU weight for thread");
+
             let start = Instant::now();
             do_work();
             println!("Thread {} finished work in {:?}", i, start.elapsed());
