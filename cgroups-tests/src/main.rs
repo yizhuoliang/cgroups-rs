@@ -20,7 +20,7 @@ fn main() {
         // Create subdirectories for each thread and set up their respective cgroup configurations
         let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
         fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
-        fs::write(format!("{}/cgroup.type", cgroup_dir), "threaded").expect("Failed to set cgroup type");
+        fs::write(format!("{}/cgroup.type", cgroup_dir), "+threaded").expect("Failed to set cgroup type");
         fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
             .expect("Failed to set CPU weight");
     }
