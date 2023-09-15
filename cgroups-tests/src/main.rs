@@ -51,7 +51,7 @@ fn main() {
 
             let start = Instant::now();
             do_work();
-            println!("Thread {} finished work in {:?}", i, start.elapsed());
+            println!("Thread {} finished work in {:?}", thread_id, start.elapsed());
         })
     }).collect();
 
