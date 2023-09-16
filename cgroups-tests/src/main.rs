@@ -159,5 +159,8 @@ fn set_thread_weight(thread_id: usize, weight: u32) {
 
 fn cleanup_cgroup() {
     let res = fs::remove_dir("/sys/fs/cgroup/my_cgroup");
-    println!("{}", res);
+    match res {
+        Ok(()) => println!("Directory removed successfully"),
+        Err(e) => println!("Failed to remove directory: {}", e),
+    }
 }
