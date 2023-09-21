@@ -58,7 +58,7 @@ fn main() {
 
 fn do_work() {
     let mut x = 0;
-    for _ in 0..10000000000 {
+    for _ in 0..2147483647 {
         x += 1;
     }
 }
