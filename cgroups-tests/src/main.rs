@@ -53,7 +53,7 @@ fn main() {
 
     let start = Instant::now();
     do_work();
-    println!("Without cgroup restriction, main process finished work in {}", start.elapsed());
+    println!("Without cgroup restriction, main process finished work in {:?}", start.elapsed());
 }
 
 fn do_work() {
