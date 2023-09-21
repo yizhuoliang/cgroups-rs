@@ -10,11 +10,11 @@ fn main() {
     cleanup_cgroup();
     setup_cgroup();
 
-    // set the weight of the main process to 80%
-    fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "8000")
-        .expect("Failed to set CPU weight for main process");
+    // // set the weight of the main process to 80%
+    // fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "8000")
+    //     .expect("Failed to set CPU weight for main process");
 
-    const THREAD_WEIGHTS: [(u32, &str); 3] = [(20, "A"), (10, "B"), (40, "C")];
+    const THREAD_WEIGHTS: [(u32, &str); 3] = [(20, "A"), (10, "B"), (60, "C")];
 
     // for &(weight, thread_id) in &THREAD_WEIGHTS {
     //     // Create subdirectories for each thread and set up their respective cgroup configurations
