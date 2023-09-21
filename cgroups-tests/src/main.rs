@@ -23,26 +23,17 @@ fn main() {
         fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
             .expect("Failed to set CPU weight");
     }
-    
-    // let weights = [100, 300, 400];
-    // let handles: Vec<_> = weights.iter().enumerate().map(|(i, &weight)| {
-    //     thread::spawn(move || {
-    //         set_thread_weight(i, weight);
-    //         let start = Instant::now();
-    //         do_work();
-    //         println!("Thread {} finished work in {:?}", i, start.elapsed());
-    //     })
-    // }).collect();
 
     let handles: Vec<_> = THREAD_WEIGHTS.iter().map(|&(weight, thread_id)| {
         thread::spawn(move || {
             
             // Add this thread to the cgroup
             let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
+            let tid = format!("{}", gettid::gettid());
             fs::OpenOptions::new()
                 .write(true)
                 .open(format!("{}/cgroup.threads", cgroup_dir))
-                .and_then(|mut file| file.write_all(thread_id.as_bytes()))
+                .and_then(|mut file| file.write_all(tid.as_bytes()))
                 .expect("Failed to add thread to cgroup");
 
             fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
