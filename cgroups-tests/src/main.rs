@@ -14,7 +14,7 @@ fn main() {
     fs::write("/sys/fs/cgroup/my_cgroup/cpu.weight", "8000")
         .expect("Failed to set CPU weight for main process");
 
-    const THREAD_WEIGHTS: [(u32, &str); 3] = [(10, "A"), (30, "B"), (40, "C")];
+    const THREAD_WEIGHTS: [(u32, &str); 3] = [(20, "A"), (10, "B"), (40, "C")];
 
     for &(weight, thread_id) in &THREAD_WEIGHTS {
         // Create subdirectories for each thread and set up their respective cgroup configurations
@@ -50,11 +50,15 @@ fn main() {
     for handle in handles {
         handle.join().expect("Failed to join thread");
     }
+
+    let start = Instant::now();
+    do_work();
+    println!("Without cgroup restriction, main process finished work in {}", start.elapsed());
 }
 
 fn do_work() {
     let mut x = 0;
-    for _ in 0..1_000_000_000 {
+    for _ in 0..10000000000 {
         x += 1;
     }
 }
