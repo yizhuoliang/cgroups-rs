@@ -142,6 +142,7 @@ fn setup_cgroup() {
     
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
     fs::write("/sys/fs/cgroup/my_cgroup/cgroup.type", "threaded").expect("Failed to set cgroup type");
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.subtree_control", "+cpu +cpuset").expect("Failed to set cgroup type");
 }
 
 fn set_thread_weight(thread_id: usize, weight: u32) {
