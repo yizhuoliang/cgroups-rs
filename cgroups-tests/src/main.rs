@@ -20,7 +20,6 @@ fn main() {
         // Create subdirectories for each thread and set up their respective cgroup configurations
         let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
         fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
-        // fs::write(format!("{}/cgroup.type", cgroup_dir), "+threaded").expect("Failed to set cgroup type");
         fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
             .expect("Failed to set CPU weight");
     }
@@ -140,8 +139,9 @@ fn setup_cgroup() {
 
     file.write_all(b"+cpu\n").expect("Failed to delegate CPU controller");
     file.write_all(b"+cpuset\n").expect("Failed to delegate cpuset controller");
-
+    
     fs::create_dir("/sys/fs/cgroup/my_cgroup").expect("Failed to create cgroup");
+    fs::write("/sys/fs/cgroup/my_cgroup/cgroup.type", "threaded").expect("Failed to set cgroup type");
 }
 
 fn set_thread_weight(thread_id: usize, weight: u32) {
