@@ -25,7 +25,7 @@ fn main() {
     let handles: Vec<_> = THREAD_WEIGHTS.iter().map(|&(weight, thread_id)| {
         thread::spawn(move || {
         
-            // let tid = format!("{}", gettid::gettid());
+            let tid = format!("{}", gettid::gettid());
             // let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", tid);
             // fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
             // fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cgroup.type", tid), "threaded")
