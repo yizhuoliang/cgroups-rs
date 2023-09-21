@@ -29,13 +29,13 @@ fn main() {
             
             // Add this thread to the cgroup
             let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
-            let tid = format!("{}", gettid::gettid());
+            // let tid = format!("{}", gettid::gettid());
             fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cgroup.type", thread_id), "threaded")
                 .expect("Failed to set thread cgroup type");
             fs::OpenOptions::new()
                 .write(true)
                 .open(format!("{}/cgroup.threads", cgroup_dir))
-                .and_then(|mut file| file.write_all(tid.as_bytes()))
+                .and_then(|mut file| file.write_all(thread_id.as_bytes()))
                 .expect("Failed to add thread to cgroup");
 
             fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
