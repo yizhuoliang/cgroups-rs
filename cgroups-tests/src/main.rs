@@ -20,30 +20,30 @@ fn main() {
         // Create subdirectories for each thread and set up their respective cgroup configurations
         let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
         fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
-        fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
-            .expect("Failed to set CPU weight");
     }
 
     let handles: Vec<_> = THREAD_WEIGHTS.iter().map(|&(weight, thread_id)| {
         thread::spawn(move || {
-            
-            // Add this thread to the cgroup
-            let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", thread_id);
-            // let tid = format!("{}", gettid::gettid());
-            fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cgroup.type", thread_id), "threaded")
+        
+            let tid = format!("{}", gettid::gettid());
+            let cgroup_dir = format!("/sys/fs/cgroup/my_cgroup/thread_{}", tid);
+            fs::create_dir(&cgroup_dir).expect("Failed to create thread cgroup");
+            fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cgroup.type", tid), "threaded")
                 .expect("Failed to set thread cgroup type");
+            fs::write(format!("{}/cpu.weight", cgroup_dir), &format!("{}", weight * 100))
+                .expect("Failed to set CPU weight");
             fs::OpenOptions::new()
                 .write(true)
                 .open(format!("{}/cgroup.threads", cgroup_dir))
-                .and_then(|mut file| file.write_all(thread_id.as_bytes()))
+                .and_then(|mut file| file.write_all(tid.as_bytes()))
                 .expect("Failed to add thread to cgroup");
 
-            fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", thread_id), weight.to_string())
+            fs::write(format!("/sys/fs/cgroup/my_cgroup/thread_{}/cpu.weight", tid), weight.to_string())
             .expect("Failed to set CPU weight for thread");
 
             let start = Instant::now();
             do_work();
-            println!("Thread {} finished work in {:?}", thread_id, start.elapsed());
+            println!("Thread {} finished work in {:?}", tid, start.elapsed());
         })
     }).collect();
 
