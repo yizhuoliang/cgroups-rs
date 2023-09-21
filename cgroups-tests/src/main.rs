@@ -57,10 +57,16 @@ fn main() {
 }
 
 fn do_work() {
-    let mut x = 0;
-    for _ in 0..2147483647 {
-        x += 1;
+    let mut result = 0.0;
+
+    for i in 1..=100000 {
+        for j in 1..=10000 {
+            result += (i as f64).sqrt() / (j as f64).sqrt();
+        }
     }
+
+    // Print the result to ensure the computations aren't optimized away.
+    println!("Result: {}", result);
 }
 
 fn test1() {
